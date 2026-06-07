@@ -1,0 +1,30 @@
+{
+  "ingredient_usage_count": {},
+  "total_analyses": 2,
+  "total_adaptability_calculations": 1,
+  "correct_adaptability_count": 1,
+  "issued_calculation_ids": [
+    "044ca1e978c94c8fa0eb954294f592da"
+  ],
+  "adaptability_feedback_ids": [
+    "feedback:044ca1e978c94c8fa0eb954294f592da"
+  ],
+  "risk_warning_count": {},
+  "total_schemes_generated": 1,
+  "schemes_adopted_count": 0,
+  "issued_suggestion_ids": [
+    "85d6488a203847db84425658aa508d93"
+  ],
+  "adopted_scheme_ids": [],
+  "conflict_detected_count": 0,
+  "analysis_by_skin_type": {
+    "干性": 2
+  },
+  "suggestions_by_season": {
+    "冬季": 1
+  },
+  "analysis_dates": [
+    "2026-06-07",
+    "2026-06-07"
+  ]
+}

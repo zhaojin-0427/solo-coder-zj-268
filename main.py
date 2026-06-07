@@ -200,7 +200,9 @@ async def record_scheme_adoption(request: SchemeAdoptRequest):
     try:
         if request.adopted:
             ok = stats_store.record_scheme_adopted(suggestion_id=request.suggestion_id)
-            if not ok:
+            if ok == -1:
+                return error_response(message="无效的 suggestion_id", code=400)
+            if ok == 0:
                 return error_response(message="该方案已记录采纳或无可用方案可采纳", code=400)
         return success_response(data={"adopted": request.adopted}, message="方案采纳记录成功")
     except Exception as e:
@@ -214,7 +216,9 @@ async def record_adaptability_feedback(request: FeedbackRequest):
             is_correct=request.is_correct,
             calculation_id=request.calculation_id
         )
-        if not ok:
+        if ok == -1:
+            return error_response(message="无效的 calculation_id", code=400)
+        if ok == 0:
             return error_response(message="该计算结果已反馈过", code=400)
         return success_response(
             data={"is_correct": request.is_correct},

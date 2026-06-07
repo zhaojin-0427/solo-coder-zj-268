@@ -1,5 +1,5 @@
-from typing import Generic, TypeVar, Optional, List
-from pydantic import BaseModel, Field
+from typing import Generic, TypeVar, Optional, List, Literal
+from pydantic import BaseModel, Field, field_validator
 
 T = TypeVar('T')
 
@@ -36,11 +36,22 @@ class ParseResult(BaseModel):
     unknown_ingredients: List[str]
 
 
+VALID_SKIN_TYPES = ["干性", "油性", "混合性", "敏感性", "痘痘", "中性", "成熟肌", "暗沉"]
+VALID_SEASONS = ["春季", "夏季", "秋季", "冬季"]
+
+
 class SkinProfile(BaseModel):
     skin_type: str = Field(..., description="肤质类型：干性、油性、混合性、敏感性、痘痘、中性、成熟肌、暗沉")
     is_sensitive: Optional[bool] = Field(default=False, description="是否敏感肌")
     concerns: Optional[List[str]] = Field(default=[], description="主要护肤诉求")
     allergies: Optional[List[str]] = Field(default=[], description="过敏成分")
+
+    @field_validator("skin_type")
+    @classmethod
+    def validate_skin_type(cls, v):
+        if v not in VALID_SKIN_TYPES:
+            raise ValueError(f"不支持的肤质类型: {v}，支持的类型: {', '.join(VALID_SKIN_TYPES)}")
+        return v
 
 
 class ProductIngredients(BaseModel):
@@ -96,6 +107,15 @@ class SuggestionRequest(BaseModel):
     skin_profile: SkinProfile
     season: Optional[str] = Field(default=None, description="季节：春季、夏季、秋季、冬季，不传则自动判断")
     current_ingredients: Optional[List[str]] = Field(default=[], description="当前使用产品成分")
+
+    @field_validator("season")
+    @classmethod
+    def validate_season(cls, v):
+        if v is None:
+            return v
+        if v not in VALID_SEASONS:
+            raise ValueError(f"不支持的季节: {v}，支持的季节: {', '.join(VALID_SEASONS)}")
+        return v
 
 
 class SeasonalTip(BaseModel):

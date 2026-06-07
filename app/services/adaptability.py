@@ -173,6 +173,7 @@ class AdaptabilityCalculator:
         stats_store.record_analysis(skin_type=skin_type)
         stats_store.record_adaptability_calculation()
         calculation_id = uuid.uuid4().hex
+        stats_store.register_calculation_id(calculation_id)
         
         return AdaptabilityResult(
             calculation_id=calculation_id,
