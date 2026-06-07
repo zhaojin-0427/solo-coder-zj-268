@@ -1,6 +1,8 @@
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 from app.schemas import (
     ApiResponse,
@@ -28,6 +30,27 @@ app = FastAPI(
     description="提供成分解析、肤质适配计算、成分冲突检测、护肤建议推送和数据统计服务",
     version="1.0.0"
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    errors = []
+    for err in exc.errors():
+        loc = ".".join(str(x) for x in err.get("loc", []))
+        errors.append(f"{loc}: {err.get('msg', '')}")
+    message = "参数校验失败: " + "; ".join(errors) if errors else "参数校验失败"
+    return JSONResponse(
+        status_code=200,
+        content={"code": 400, "message": message, "data": None}
+    )
+
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=200,
+        content={"code": 500, "message": f"服务器内部错误: {str(exc)}", "data": None}
+    )
 
 app.add_middleware(
     CORSMiddleware,
@@ -176,7 +199,9 @@ async def get_adoption_rate():
 async def record_scheme_adoption(request: SchemeAdoptRequest):
     try:
         if request.adopted:
-            stats_store.record_scheme_adopted()
+            ok = stats_store.record_scheme_adopted(suggestion_id=request.suggestion_id)
+            if not ok:
+                return error_response(message="该方案已记录采纳或无可用方案可采纳", code=400)
         return success_response(data={"adopted": request.adopted}, message="方案采纳记录成功")
     except Exception as e:
         return error_response(message=f"记录失败: {str(e)}", code=500)
@@ -185,7 +210,12 @@ async def record_scheme_adoption(request: SchemeAdoptRequest):
 @app.post("/api/stats/adaptability-feedback", response_model=ApiResponse)
 async def record_adaptability_feedback(request: FeedbackRequest):
     try:
-        stats_store.record_adaptability_calculation(is_correct=request.is_correct)
+        ok = stats_store.record_adaptability_feedback(
+            is_correct=request.is_correct,
+            calculation_id=request.calculation_id
+        )
+        if not ok:
+            return error_response(message="该计算结果已反馈过", code=400)
         return success_response(
             data={"is_correct": request.is_correct},
             message="适配反馈记录成功"

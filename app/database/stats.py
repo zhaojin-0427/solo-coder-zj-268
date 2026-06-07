@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Set
 from collections import defaultdict
 from datetime import datetime
 
@@ -17,9 +17,11 @@ class StatisticsStore:
         self.total_analyses: int = 0
         self.total_adaptability_calculations: int = 0
         self.correct_adaptability_count: int = 0
+        self.adaptability_feedback_ids: Set[str] = set()
         self.risk_warning_count: Dict[str, int] = defaultdict(int)
         self.total_schemes_generated: int = 0
         self.schemes_adopted_count: int = 0
+        self.adopted_scheme_ids: Set[str] = set()
         self.conflict_detected_count: int = 0
         self.analysis_by_skin_type: Dict[str, int] = defaultdict(int)
         self.suggestions_by_season: Dict[str, int] = defaultdict(int)
@@ -35,10 +37,18 @@ class StatisticsStore:
             self.analysis_by_skin_type[skin_type] += 1
         self.analysis_dates.append(datetime.now().strftime("%Y-%m-%d"))
     
-    def record_adaptability_calculation(self, is_correct: bool = None):
+    def record_adaptability_calculation(self):
         self.total_adaptability_calculations += 1
+    
+    def record_adaptability_feedback(self, is_correct: bool, calculation_id: str = None) -> bool:
+        if calculation_id:
+            dedup_key = f"feedback:{calculation_id}"
+            if dedup_key in self.adaptability_feedback_ids:
+                return False
+            self.adaptability_feedback_ids.add(dedup_key)
         if is_correct:
             self.correct_adaptability_count += 1
+        return True
     
     def record_risk_warning(self, risk_type: str):
         self.risk_warning_count[risk_type] += 1
@@ -46,8 +56,16 @@ class StatisticsStore:
     def record_scheme_generated(self):
         self.total_schemes_generated += 1
     
-    def record_scheme_adopted(self):
-        self.schemes_adopted_count += 1
+    def record_scheme_adopted(self, suggestion_id: str = None) -> bool:
+        if suggestion_id:
+            dedup_key = f"adopt:{suggestion_id}"
+            if dedup_key in self.adopted_scheme_ids:
+                return False
+            self.adopted_scheme_ids.add(dedup_key)
+        if self.schemes_adopted_count < self.total_schemes_generated:
+            self.schemes_adopted_count += 1
+            return True
+        return False
     
     def record_conflict_detected(self):
         self.conflict_detected_count += 1

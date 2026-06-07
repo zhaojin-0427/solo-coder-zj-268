@@ -62,6 +62,7 @@ class IngredientAdaptDetail(BaseModel):
 
 
 class AdaptabilityResult(BaseModel):
+    calculation_id: str
     total_score: float
     level: str
     skin_type: str
@@ -112,6 +113,7 @@ class DailyRoutine(BaseModel):
 
 
 class SuggestionResult(BaseModel):
+    suggestion_id: str
     seasonal_tip: SeasonalTip
     daily_routine: DailyRoutine
     ingredient_recommendations: List[dict]

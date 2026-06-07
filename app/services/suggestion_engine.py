@@ -1,4 +1,5 @@
 from typing import List, Optional
+import uuid
 from app.database.ingredients import (
     SEASONAL_ADVICE,
     SKIN_TYPE_PROFILES,
@@ -121,8 +122,10 @@ class SuggestionEngine:
         stats_store.record_suggestion_by_season(season)
         stats_store.record_analysis(skin_type=skin_type)
         stats_store.record_scheme_generated()
+        suggestion_id = uuid.uuid4().hex
         
         return SuggestionResult(
+            suggestion_id=suggestion_id,
             seasonal_tip=seasonal_tip,
             daily_routine=daily_routine,
             ingredient_recommendations=recommendations,

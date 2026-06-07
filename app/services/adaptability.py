@@ -1,4 +1,5 @@
-from typing import List
+from typing import List, Set
+import uuid
 from app.database.ingredients import (
     get_ingredient_info,
     SKIN_TYPE_PROFILES
@@ -12,6 +13,17 @@ from app.utils.helpers import get_adaptability_level
 from app.database.stats import stats_store
 
 
+def _canonicalize_allergy_names(allergy_list: List[str]) -> Set[str]:
+    canonical = set()
+    for allergy in allergy_list or []:
+        info = get_ingredient_info(allergy)
+        if info:
+            canonical.add(info["name"].lower())
+        else:
+            canonical.add(allergy.strip().lower())
+    return canonical
+
+
 class AdaptabilityCalculator:
     
     @staticmethod
@@ -21,7 +33,7 @@ class AdaptabilityCalculator:
     ) -> AdaptabilityResult:
         skin_type = skin_profile.skin_type
         is_sensitive = skin_profile.is_sensitive
-        allergies = [a.lower() for a in (skin_profile.allergies or [])]
+        allergies = _canonicalize_allergy_names(skin_profile.allergies)
         
         skin_profile_data = SKIN_TYPE_PROFILES.get(skin_type, SKIN_TYPE_PROFILES["中性"])
         preferred = [p.lower() for p in skin_profile_data["preferred_ingredients"]]
@@ -56,7 +68,7 @@ class AdaptabilityCalculator:
             score = 50.0
             reason = ""
             
-            if name_lower in [a.lower() for a in allergies]:
+            if name_lower in allergies:
                 is_risk = True
                 score = 0.0
                 reason = f"{canonical_name} 是您的过敏成分，严禁使用"
@@ -160,8 +172,10 @@ class AdaptabilityCalculator:
         
         stats_store.record_analysis(skin_type=skin_type)
         stats_store.record_adaptability_calculation()
+        calculation_id = uuid.uuid4().hex
         
         return AdaptabilityResult(
+            calculation_id=calculation_id,
             total_score=round(avg_score, 1),
             level=level,
             skin_type=skin_type,
