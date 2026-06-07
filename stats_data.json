@@ -1,15 +1,37 @@
 {
-  "ingredient_usage_count": {},
-  "total_analyses": 2,
-  "total_adaptability_calculations": 1,
+  "ingredient_usage_count": {
+    "烟酰胺": 3,
+    "水杨酸": 2,
+    "苯氧乙醇": 1,
+    "视黄醇": 2,
+    "酒精": 1,
+    "维生素E": 1,
+    "玻尿酸": 1,
+    "维生素C": 1,
+    "果酸": 2,
+    "神经酰胺": 1
+  },
+  "total_analyses": 9,
+  "total_adaptability_calculations": 4,
   "correct_adaptability_count": 1,
   "issued_calculation_ids": [
+    "59b6570c762448d38563d2df35887c5e",
+    "001edcdd6ded42d0be8b0a2f5429c3ea",
+    "1478941f912e4516bff9e482ce4dc34a",
     "044ca1e978c94c8fa0eb954294f592da"
   ],
   "adaptability_feedback_ids": [
     "feedback:044ca1e978c94c8fa0eb954294f592da"
   ],
-  "risk_warning_count": {},
+  "risk_warning_count": {
+    "交替窗口冲突-维生素C/烟酰胺": 1,
+    "交替窗口冲突-果酸/水杨酸": 1,
+    "交替窗口冲突-果酸/视黄醇": 2,
+    "交替窗口冲突-水杨酸/视黄醇": 1,
+    "交替窗口冲突-酒精/视黄醇": 1,
+    "停用恢复建议-视黄醇": 2,
+    "停用恢复建议-果酸": 2
+  },
   "total_schemes_generated": 1,
   "schemes_adopted_count": 0,
   "issued_suggestion_ids": [
@@ -18,13 +40,57 @@
   "adopted_scheme_ids": [],
   "conflict_detected_count": 0,
   "analysis_by_skin_type": {
-    "干性": 2
+    "干性": 2,
+    "油性": 5
   },
   "suggestions_by_season": {
     "冬季": 1
   },
   "analysis_dates": [
     "2026-06-07",
+    "2026-06-07",
+    "2026-06-07",
+    "2026-06-07",
+    "2026-06-07",
+    "2026-06-07",
+    "2026-06-07",
+    "2026-06-07",
     "2026-06-07"
-  ]
+  ],
+  "total_regimens_generated": 2,
+  "total_regimens_completed": 0,
+  "issued_regimen_ids": [
+    "7c37d2914fdb4970ad87d262edd8f573",
+    "ffb18dae22a14f9a9c24b8b1bb512d46"
+  ],
+  "regimen_info": {
+    "7c37d2914fdb4970ad87d262edd8f573": {
+      "total_weeks": 4,
+      "created_at": "2026-06-07 16:08:41",
+      "tracked_weeks": [
+        2
+      ],
+      "completed": false,
+      "is_multi_product": false
+    },
+    "ffb18dae22a14f9a9c24b8b1bb512d46": {
+      "total_weeks": 4,
+      "created_at": "2026-06-07 16:43:52",
+      "tracked_weeks": [
+        4
+      ],
+      "completed": false,
+      "is_multi_product": false
+    }
+  },
+  "adopted_regimen_ids": [
+    "adopt_regimen:ffb18dae22a14f9a9c24b8b1bb512d46"
+  ],
+  "multi_product_regimens_count": 2,
+  "multi_product_adopted_count": 0,
+  "total_regimen_tracks": 2,
+  "regimen_acne_warnings": 0,
+  "regimen_sensitivity_warnings": 0,
+  "regimen_adjustment_count": 0,
+  "regimen_completion_sum": 171.4
 }

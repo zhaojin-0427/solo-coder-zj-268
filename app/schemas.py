@@ -1,5 +1,6 @@
-from typing import Generic, TypeVar, Optional, List, Literal
+from typing import Generic, TypeVar, Optional, List, Literal, Dict
 from pydantic import BaseModel, Field, field_validator
+from datetime import date
 
 T = TypeVar('T')
 
@@ -148,3 +149,163 @@ class SchemeAdoptRequest(BaseModel):
 class FeedbackRequest(BaseModel):
     calculation_id: Optional[str] = Field(default=None)
     is_correct: bool = Field(..., description="适配计算是否准确")
+
+
+TimeSlot = Literal["morning", "evening", "weekly", "morning_evening"]
+FrequencyUnit = Literal["daily", "times_per_week", "every_n_days"]
+
+
+class RegimenProduct(BaseModel):
+    product_name: str = Field(..., description="产品名称")
+    ingredient_list: List[str] = Field(..., description="产品成分列表")
+    time_slot: TimeSlot = Field(..., description="使用时段：morning/evening/weekly/morning_evening")
+    frequency: int = Field(default=1, ge=1, description="使用频率，配合 frequency_unit 使用")
+    frequency_unit: FrequencyUnit = Field(default="daily", description="频率单位：daily/times_per_week/every_n_days")
+    order_index: int = Field(default=1, ge=1, description="使用顺序（在同时段内）")
+    start_week: int = Field(default=1, ge=1, description="开始使用的周次")
+    end_week: Optional[int] = Field(default=None, ge=1, description="停止使用的周次（None表示持续到疗程结束）")
+
+
+class RegimenPlanRequest(BaseModel):
+    skin_profile: SkinProfile
+    total_weeks: int = Field(default=4, ge=1, le=52, description="疗程总周数")
+    products: List[RegimenProduct] = Field(..., description="参与疗程的所有产品及其使用安排")
+    notes: Optional[str] = Field(default=None, description="用户备注")
+
+
+class IngredientAccumulationRisk(BaseModel):
+    ingredient_name: str
+    category: str
+    daily_exposure_count: int
+    weekly_exposure_count: int
+    risk_level: Literal["low", "medium", "high", "critical"]
+    risk_score: float
+    description: str
+    affected_time_slots: List[str]
+    recommendation: str
+
+
+class TolerancePoint(BaseModel):
+    week: int
+    tolerance_score: float
+    irritation_risk: float
+    status: str
+    description: str
+
+
+class ToleranceCurve(BaseModel):
+    ingredient_name: str
+    start_score: float
+    current_score: float
+    target_score: float
+    points: List[TolerancePoint]
+    is_tolerated: bool
+    recommendation: str
+
+
+class AlternationWindow(BaseModel):
+    ingredient_a: str
+    ingredient_b: str
+    conflict_type: str
+    min_interval_hours: int
+    recommended_pattern: str
+    current_plan_ok: bool
+    description: str
+
+
+class RestartAdvice(BaseModel):
+    ingredient_name: str
+    stop_week: int
+    rest_weeks: int
+    restart_week: Optional[int] = None
+    reason: str
+    restart_tips: List[str]
+
+
+class DailyCareItem(BaseModel):
+    date: Optional[str] = Field(default=None, description="日期，YYYY-MM-DD格式")
+    weekday: str
+    time_slot: str
+    order_index: int
+    product_name: str
+    ingredients: List[str]
+    notes: List[str]
+
+
+class StageRiskWarning(BaseModel):
+    stage: str
+    start_week: int
+    end_week: int
+    risk_level: Literal["low", "medium", "high", "critical"]
+    risk_type: str
+    description: str
+    triggered_ingredients: List[str]
+    actions: List[str]
+
+
+class AdjustmentSuggestion(BaseModel):
+    priority: Literal["critical", "high", "medium", "low"]
+    category: str
+    current_plan: str
+    suggested_plan: str
+    reason: str
+    impact_scope: List[str]
+
+
+class RegimenPlanResult(BaseModel):
+    regimen_id: str
+    total_weeks: int
+    skin_type: str
+    plan_days: List[DailyCareItem]
+    accumulation_risks: List[IngredientAccumulationRisk]
+    tolerance_curves: List[ToleranceCurve]
+    alternation_windows: List[AlternationWindow]
+    restart_advices: List[RestartAdvice]
+    stage_warnings: List[StageRiskWarning]
+    adjustment_suggestions: List[AdjustmentSuggestion]
+    overall_risk_level: Literal["low", "medium", "high", "critical"]
+    overall_score: float
+    summary: str
+
+
+class RegimenTrackRequest(BaseModel):
+    regimen_id: str = Field(..., description="疗程方案ID")
+    week: int = Field(..., ge=1, description="当前周次")
+    completed_days: int = Field(default=0, ge=0, description="本周已完成护理天数")
+    acne_occurred: bool = Field(default=False, description="是否出现爆痘")
+    sensitivity_occurred: bool = Field(default=False, description="是否出现敏感")
+    irritation_areas: Optional[List[str]] = Field(default=None, description="不适部位")
+    adjusted_products: Optional[List[str]] = Field(default=None, description="已调整的产品")
+    user_notes: Optional[str] = Field(default=None, description="用户备注")
+
+
+class RegimenTrackResult(BaseModel):
+    track_id: str
+    regimen_id: str
+    week: int
+    completion_rate: float
+    stage: str
+    warnings_triggered: List[str]
+    adjusted: bool
+    adjustment_details: List[str]
+    next_week_advice: List[str]
+
+
+class RegimenStats(BaseModel):
+    total_regimens: int
+    completed_regimens: int
+    completion_rate: float
+    total_tracks: int
+    acne_warning_count: int
+    sensitivity_warning_count: int
+    total_risk_warnings: int
+    adjustment_trigger_count: int
+    adjustment_trigger_rate: float
+    multi_product_regimens: int
+    multi_product_adopted: int
+    multi_product_adoption_rate: float
+
+
+class RegimenAdoptRequest(BaseModel):
+    regimen_id: str = Field(..., description="疗程方案ID")
+    adopted: bool = Field(..., description="是否采纳该疗程方案")

@@ -15,13 +15,19 @@ from app.schemas import (
     SuggestionRequest,
     SuggestionResult,
     SchemeAdoptRequest,
-    FeedbackRequest
+    FeedbackRequest,
+    RegimenPlanRequest,
+    RegimenPlanResult,
+    RegimenTrackRequest,
+    RegimenTrackResult,
+    RegimenAdoptRequest
 )
 from app.utils.helpers import success_response, error_response
 from app.services.ingredient_parser import IngredientParser
 from app.services.adaptability import AdaptabilityCalculator
 from app.services.conflict_detector import ConflictDetector
 from app.services.suggestion_engine import SuggestionEngine
+from app.services.regimen_planner import RegimenPlanner
 from app.database.stats import stats_store
 
 
@@ -65,7 +71,7 @@ app.add_middleware(
 async def root():
     return success_response(data={
         "service": "护肤品成分分析与肤质适配推荐 API",
-        "version": "1.0.0",
+        "version": "2.0.0",
         "endpoints": {
             "成分解析": "POST /api/parse",
             "成分库查询": "GET /api/ingredients/{category}",
@@ -73,13 +79,21 @@ async def root():
             "成分冲突检测": "POST /api/conflict",
             "冲突规则库": "GET /api/conflict/rules",
             "护肤建议推送": "POST /api/suggestions",
+            "疗程方案编排": "POST /api/regimen/plan",
+            "疗程周度追踪": "POST /api/regimen/track",
+            "疗程方案采纳": "POST /api/regimen/adopt",
             "统计概览": "GET /api/stats/overview",
             "热门成分分布": "GET /api/stats/hot-ingredients",
             "肤质适配准确率": "GET /api/stats/adaptability-accuracy",
             "风险成分预警次数": "GET /api/stats/risk-warnings",
             "护肤方案采纳率": "GET /api/stats/adoption-rate",
             "方案采纳反馈": "POST /api/stats/adopt-scheme",
-            "适配准确率反馈": "POST /api/stats/adaptability-feedback"
+            "适配准确率反馈": "POST /api/stats/adaptability-feedback",
+            "疗程完成率统计": "GET /api/stats/regimen/completion",
+            "疗程阶段风险预警统计": "GET /api/stats/regimen/risk-warnings",
+            "疗程方案调整触发率": "GET /api/stats/regimen/adjustment-rate",
+            "多产品组合采纳率": "GET /api/stats/regimen/multi-product-adoption",
+            "疗程综合统计": "GET /api/stats/regimen/overview"
         }
     })
 
@@ -226,6 +240,88 @@ async def record_adaptability_feedback(request: FeedbackRequest):
         )
     except Exception as e:
         return error_response(message=f"记录失败: {str(e)}", code=500)
+
+
+@app.post("/api/regimen/plan", response_model=ApiResponse)
+async def generate_regimen_plan(request: RegimenPlanRequest):
+    try:
+        result: RegimenPlanResult = RegimenPlanner.generate_regimen_plan(request)
+        return success_response(data=result.model_dump(), message="疗程方案编排成功")
+    except Exception as e:
+        return error_response(message=f"疗程方案编排失败: {str(e)}", code=500)
+
+
+@app.post("/api/regimen/track", response_model=ApiResponse)
+async def track_regimen(request: RegimenTrackRequest):
+    try:
+        if request.regimen_id not in stats_store.issued_regimen_ids:
+            return error_response(message="无效的 regimen_id", code=400)
+        result: RegimenTrackResult = RegimenPlanner.track_regimen(request)
+        return success_response(data=result.model_dump(), message="疗程追踪记录成功")
+    except Exception as e:
+        return error_response(message=f"疗程追踪失败: {str(e)}", code=500)
+
+
+@app.post("/api/regimen/adopt", response_model=ApiResponse)
+async def record_regimen_adoption(request: RegimenAdoptRequest):
+    try:
+        if request.adopted:
+            ok = stats_store.record_regimen_adopted(regimen_id=request.regimen_id)
+            if ok == -1:
+                return error_response(message="无效的 regimen_id", code=400)
+            if ok == 0:
+                return error_response(message="该疗程方案已记录采纳或不存在", code=400)
+        return success_response(
+            data={"regimen_id": request.regimen_id, "adopted": request.adopted},
+            message="疗程方案采纳记录成功"
+        )
+    except Exception as e:
+        return error_response(message=f"记录失败: {str(e)}", code=500)
+
+
+@app.get("/api/stats/regimen/completion", response_model=ApiResponse)
+async def get_regimen_completion():
+    try:
+        data = stats_store.get_regimen_completion_rate()
+        return success_response(data=data, message="获取疗程完成率成功")
+    except Exception as e:
+        return error_response(message=f"获取疗程完成率失败: {str(e)}", code=500)
+
+
+@app.get("/api/stats/regimen/risk-warnings", response_model=ApiResponse)
+async def get_regimen_risk_warnings():
+    try:
+        data = stats_store.get_regimen_risk_warnings()
+        return success_response(data=data, message="获取疗程阶段风险预警统计成功")
+    except Exception as e:
+        return error_response(message=f"获取风险预警统计失败: {str(e)}", code=500)
+
+
+@app.get("/api/stats/regimen/adjustment-rate", response_model=ApiResponse)
+async def get_regimen_adjustment_rate():
+    try:
+        data = stats_store.get_regimen_adjustment_rate()
+        return success_response(data=data, message="获取疗程方案调整触发率成功")
+    except Exception as e:
+        return error_response(message=f"获取调整触发率失败: {str(e)}", code=500)
+
+
+@app.get("/api/stats/regimen/multi-product-adoption", response_model=ApiResponse)
+async def get_multi_product_adoption():
+    try:
+        data = stats_store.get_multi_product_adoption_rate()
+        return success_response(data=data, message="获取多产品组合采纳率成功")
+    except Exception as e:
+        return error_response(message=f"获取多产品采纳率失败: {str(e)}", code=500)
+
+
+@app.get("/api/stats/regimen/overview", response_model=ApiResponse)
+async def get_regimen_overview():
+    try:
+        data = stats_store.get_regimen_stats()
+        return success_response(data=data, message="获取疗程综合统计成功")
+    except Exception as e:
+        return error_response(message=f"获取疗程综合统计失败: {str(e)}", code=500)
 
 
 if __name__ == "__main__":
